@@ -6,28 +6,19 @@
 To work the module need this correction - https://github.com/ethereum/go-ethereum/pull/15297.
 So you must use geth version 1.7.3 or higher
 
-[![NPM version][npm-image]][npm-url]
-
-[npm-image]: https://badge.fury.io/js/etherscanner.svg
-[npm-url]: https://npmjs.org/package/etherscanner
 
 ## Installation
 
 ```bash
-npm install etherscanner
+npm install @kev_nz/etherscanner
 ```
 
 ## Usage
 
 ```js
-const EtherScanner = require('etherscanner');
-const Web3 = require('web3');
+const EtherScanner = require('@kev_nz/etherscanner');
 
-let web3Provider = new Web3.providers.HttpProvider(`http://localhost:6082`);
-// or if web3 initialized before
-let web3Provider = web3.currentProvider;
-
-let etherScanner = EtherScanner(web3Provider);
+const etherScanner = EtherScanner(`http://localhost:6082`);
 
 ```
 

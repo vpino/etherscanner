@@ -1,11 +1,11 @@
 const assert = require('assert');
-const Web3 = require('web3');
+
 const EtherScanner = require('../index');
 
 // ropsten testnet
-let web3Provider = new Web3.providers.HttpProvider(`http://localhost:6082`);
 
-let etherScanner = EtherScanner(web3Provider, 'trace');
+
+let etherScanner = EtherScanner(`http://localhost:6082`, 'trace');
 
 describe('ScanTransaction with preinstalled txs', function() {
 
