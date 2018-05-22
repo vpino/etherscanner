@@ -123,6 +123,7 @@ module.exports = (URL, loggerLevel) => {
 	let HttpProvider = new Web3.providers.HttpProvider(URL);
 	let scanner = new EtherScanner(HttpProvider, loggerLevel);
 	return {
+		url: URL,
 		scanBlock: scanner.scanBlock.bind(scanner),
 		scanTransaction: scanner.scanTransaction.bind(scanner)
 	}
