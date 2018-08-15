@@ -24,9 +24,8 @@ const etherScanner = EtherScanner(`http://localhost:6082`);
 
 ##### Get all transfers by transaction hash
 ```js
-etherScanner.scanTransaction('0xc475f8bf9d2721b17f7c09944c2aa32ea943f452cb54ee0aefcb98ead0735274', (err, result) => {
-	console.log(result);
-});
+const result = await etherScanner.scanTransaction('0xc475f8bf9d2721b17f7c09944c2aa32ea943f452cb54ee0aefcb98ead0735274');
+console.log(result);
 ```
 
 result:

@@ -60,3 +60,10 @@ typings/
 .env
 
 .node-xmlhttprequest-sync-*
+
+# json files
+*.json
+
+# env file
+
+.env*

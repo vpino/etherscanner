@@ -1,132 +1,182 @@
-const Web3 = require('web3');
-const logger = require('log4js').getLogger('etherscanner');
-const async = require('async');
-const fs = require('fs');
+const EthereumRpc = require('ethereum-rpc-promise');
+const logger = require('debug')('etherscanner');
+const loggerError = require('debug')('etherscanner:error');
+
+const pMap = require('p-map');
 
 class EtherScanner {
+  /**
+   *
+   * @param EthUrl
+   */
+  constructor(EthUrl) {
+    logger('Prepare to connect', EthUrl);
+    this.eth = new EthereumRpc(EthUrl);
+    logger('Connected');
+  }
 
-	/**
-	 *
-	 * @param HttpProvider
-	 * @param loggerLevel
-	 */
-	constructor(HttpProvider, loggerLevel = 'OFF') {
-		logger.level = loggerLevel;
+  async scanBlock(number) {
+    const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
+    if (!block) return [];
 
-		this.web3 = new Web3(HttpProvider);
-		if(!this.web3.isConnected()) {
-			logger.error("Ethereum node is not connected");
-			return;
-		}
-		logger.info('WEB3 connected');
-	}
+    const procTx = async txHash => {
+      const result = await this.scanTransaction(txHash);
+      const tx = await this.eth.eth_getTransactionByHash(txHash);
+      tx.blockNumber = number;
+      const receipt = await this.eth.eth_getTransactionReceipt(txHash);
+      const isInternal = result.filter(t => t.isInternal);
+      const output = {
+        hash: txHash,
+        transaction: tx,
+        scan: result,
+        receipt: receipt,
+        isInternal: isInternal.length > 0
+      };
 
-	scanBlock(number, cb) {
-		this.web3.eth.getBlock(number, (err, block) => {
-			if(err) return cb(err);
-			if(!block) return cb(number, []);
-			let result = [];
-			async.eachSeries(block.transactions, (txHash, cb) => {
-				this.scanTransaction(txHash, (err, transactions) => {
-					if(err) return cb(err);
-					result = result.concat(transactions);
-					return cb();
-				});
-			}, (err) => cb(err, result));
-		});
-	}
+      return output;
+    };
+    const results = await pMap(block.transactions, procTx, { concurrency: 5 });
+    block.number = number;
+    return { block, transactions: results };
+  }
+  async scanBlockForFullData(number) {
 
-	scanTransaction(hash, cb) {
-		async.waterfall([
-			cb => {
-				this.web3.eth.getTransaction(hash, (err, tx) => {
-					if(err) {
-						logger.error(`Get transaction ${hash} error`, err);
-						return cb(err)
-					}
-					if(!tx) {
-						return cb('Transaction not found');
-					}
-					if(!tx.blockNumber) {
-						return cb('Unconfirmed transaction');
-					}
-					return cb(null, tx);
-				});
-			},
-			(tx, cb) => {
-				return this._getTransactionCalls(tx, (err, result) => cb(err, result));
-			}
-		], (err, transactions) => cb(err, transactions));
-	}
+    const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
+    if (!block) return [];
 
-	_getTransactionCalls(tx, cb) {
-		this._getTransactionsFromTrace(tx.hash, (err, result) => {
-			if(err) {
-				return cb(err);
-			}
-			return cb(null, this._getTransactionsFromCall(tx, result));
-		});
-	}
+    const procTx = async txHash => {
+      const result = await this.scanTransaction(txHash);
+      const tx = await this.eth.eth_getTransactionByHash(txHash);
+      tx.blockNumber = number;
+      const receipt = await this.eth.eth_getTransactionReceipt(txHash);
+      const isInternal = result.filter(t => t.isInternal);
+      const output = {
+        hash: txHash,
+        transaction: tx,
+        scan: result,
+        receipt: receipt,
+        isInternal: isInternal.length > 0
+      };
 
-	_getTransactionsFromCall(tx, callObject) {
-		let txs = [];
-		if(parseInt(callObject.value, 16) > 0) {
-			txs.push({
-				blockNumber: tx.blockNumber,
-				blockHash: tx.blockHash,
-				to: this._getAddress(callObject.to),
-				from: this._getAddress(callObject.from),
-				value: parseInt(callObject.value, 16),
-				hash: tx.hash,
-				type: callObject.type,
-				isSuicide: callObject.type == 'SELFDESTRUCT'
-			});
-		}
-		if(!callObject.calls) {
-			return txs;
-		}
-		callObject.calls.forEach(_callObject => {
-			txs = txs.concat(this._getTransactionsFromCall(tx, _callObject));
-		});
-		return txs;
-	}
+      return output;
+    };
+    const results = await pMap(block.transactions, procTx, { concurrency: 5 });
 
-	_getTransactionsFromTrace(txHash, cb) {
-		return this.web3.currentProvider.sendAsync({
-			method: "debug_traceTransaction",
-			params: [txHash, {tracer: "callTracer"}],
-			jsonrpc: "2.0",
-			id: "2"
-		}, (err, result) => {
-			if(err)
-				return cb(err);
-			if(result.error)
-				return cb(result.error.message);
-			return cb(null, result.result);
-		});
-	}
+    return results;
+  }
+  async scanBlockForInternalTransactions(number) {
 
-	_getAddress(value) {
-		if(!value)
-			return value;
-		if(value.match(/^0x[a-zA-Z0-9]{40}/))
-			return value;
+    const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
+    if (!block) return [];
 
-		let address = this.web3.toHex(value);
-		while(address.length < 42)
-			address = address.replace(/^0x/, '0x0');
-		return address;
-	}
+    const procTx = async txHash => {
+      const result = await this.scanTransaction(txHash);
+      const receipt = await this.eth.eth_getTransactionReceipt(txHash);
+      const isInternal = result.filter(t => t.isInternal);
+      const output = {
+        hash: txHash,
+        scan: result,
+        txreceipt: receipt,
+        isInternal: isInternal.length > 0
+      };
+      return output;
+    };
+    const results = await pMap(block.transactions, procTx, { concurrency: 5 });
+    const internals = results.filter(tx => tx.isInternal);
+    const transactions = internals.reduce((txs, tx) => {
+      return txs.concat(tx.scan);
+    }, []);
+    const internalOnly = transactions.filter(t => t.isInternal);
+    return internalOnly;
+  }
+  async scanTransaction(hash) {
+
+    const tx = await this.eth.eth_getTransactionByHash(hash);
+
+    const calls = await this._getTransactionCalls(tx);
+    return calls;
+  }
+
+  async _getTransactionCalls(tx) {
+    const result = await this._getTransactionsFromTrace(tx.hash, tx.blockNumber);
+    return this._getTransactionsFromCall(tx, result);
+  }
+
+  _getTransactionsFromCall(tx, callObject, isInternal = false) {
+    let txs = [];
+    if (parseInt(callObject.value, 16) > 0) {
+      txs.push({
+        blockNumber: this._getNumberFromHex(tx.blockNumber),
+        blockHash: tx.blockHash,
+        to: this._getAddress(callObject.to),
+        from: this._getAddress(callObject.from),
+        value: parseInt(callObject.value, 16),
+        hash: tx.hash,
+        type: callObject.type,
+        isSuicide: callObject.type == 'SELFDESTRUCT',
+        isInternal
+      });
+    }
+    if (!callObject.calls) {
+      return txs;
+    }
+    callObject.calls.forEach(_callObject => {
+      txs = txs.concat(this._getTransactionsFromCall(tx, _callObject, true));
+    });
+    return txs;
+  }
+
+  async _getTransactionsFromTrace(txHash, txBlockNumber) {
+    //logger('trace', txHash);
+
+    try {
+      const blockNumber = await this.eth.eth_blockNumber();
+
+      const result = await this.eth.call('debug_traceTransaction', txHash, {
+        tracer: 'callTracer',
+        timeout: '10s',
+        reexec: blockNumber - txBlockNumber + 20
+      });
+      //logger('result', result);
+      return result;
+    } catch (err) {
+      loggerError('error doing trace', err);
+      return [];
+    }
+  }
+  _toHex(value) {
+
+  }
+  _getAddress(value) {
+    if (!value) return value;
+    if (value.match(/^0x[a-zA-Z0-9]{40}/)) return value;
+
+    if (typeof(value) == typeof(true)) return value ? '0x01' : '0x00';
+
+    let address = this.web3.toHex(value);
+    while (address.length < 42) address = address.replace(/^0x/, '0x0');
+    return address;
+  }
+  _getNumberFromHex(value) {
+    if (!value) return value;
+    if (value.match(/^0x[a-zA-Z0-9]{40}/)) return value;
+
+    let num = value.replace(/^0x/, '0x0');
+    return parseInt(num, 16);
+  }
 }
 
-module.exports = (URL, loggerLevel) => {
-	let HttpProvider = new Web3.providers.HttpProvider(URL);
-	let scanner = new EtherScanner(HttpProvider, loggerLevel);
-	return {
-		url: URL,
-		scanBlock: scanner.scanBlock.bind(scanner),
-		scanTransaction: scanner.scanTransaction.bind(scanner)
-	}
+module.exports = URL => {
+  try {
+    let scanner = new EtherScanner(URL);
+    return {
+      url: URL,
+      scanBlock: scanner.scanBlock.bind(scanner),
+      scanTransaction: scanner.scanTransaction.bind(scanner)
+    };
+  } catch (err) {
+    loggerError('Error constructing scanner', err);
+  }
 };
 
 /**
