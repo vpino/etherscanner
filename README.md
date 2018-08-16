@@ -18,7 +18,7 @@ npm install @kev_nz/etherscanner
 ```js
 const EtherScanner = require('@kev_nz/etherscanner');
 
-const etherScanner = EtherScanner(`http://localhost:6082`);
+const etherScanner = await EtherScanner(`http://localhost:6082`);
 
 ```
 
