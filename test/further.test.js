@@ -20,8 +20,8 @@ const EtherScanner = require('../index');
 // ropsten testnet
 let etherScanner;
 
-beforeEach(() => {
-  etherScanner = EtherScanner(process.env.ETH);
+beforeEach(async () => {
+  etherScanner = await EtherScanner(process.env.ETH);
 });
 
 describe('Scrap a ScanTransaction with preinstalled txs', async function() {
