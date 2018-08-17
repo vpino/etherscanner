@@ -1,6 +1,6 @@
 const logger = require('debug')('etherscanner');
 const loggerError = require('debug')('etherscanner:error');
-const EthereumRpc = require('ethereum-rpc-promise');
+const EthereumRpc = require('./ethereum-rpc');
 const Geth = require('./geth');
 const Parity = require('./parity');
 
@@ -13,7 +13,7 @@ class EtherScanner {
 	 */
 	constructor(EthereumUrl) {
 
-		this.requestId = 1;
+    this.requestId = 1;
     this.eth = new EthereumRpc(EthereumUrl);
     logger('Ethereum connected');
     this.EthereumUrl = EthereumUrl;

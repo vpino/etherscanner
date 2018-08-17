@@ -1,4 +1,4 @@
-const EthereumRpc = require('ethereum-rpc-promise');
+const EthereumRpc = require('./ethereum-rpc');
 const logger = require('debug')('etherscanner');
 const loggerError = require('debug')('etherscanner:error');
 
