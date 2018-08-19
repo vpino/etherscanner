@@ -1,5 +1,5 @@
 const EthereumRpc = require('./ethereum-rpc');
-const logger = require('debug')('etherscanner');
+const logger = require('debug')('etherscanner:parity');
 const loggerError = require('debug')('etherscanner:error');
 
 const pMap = require('p-map');
@@ -15,7 +15,8 @@ class Parity {
 	}
 
   async scanBlock(number) {
-    const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
+    const hexBlockNumber = '0x' + number.toString(16)
+    const block = await this.eth.eth_getBlockByNumber(hexBlockNumber, false);
     if (!block) return [];
       let result = [];
 
@@ -24,19 +25,46 @@ class Parity {
         const tx = await this.eth.eth_getTransactionByHash(txHash);
         tx.blockNumber = number;
         const receipt = await this.eth.eth_getTransactionReceipt(txHash);
-        logger('process result', result);
+        const toBalance = tx.to === null ? 0 : await this.eth.eth_getBalance(tx.to, hexBlockNumber);
+        const fromBalance = await this.eth.eth_getBalance(tx.from, hexBlockNumber);
+        let isContract = receipt.contractAddress !== null;
+
+        if (tx.to !== null && !isContract) {
+          //check if contract
+          const code = await this.eth.eth_getCode(tx.to, hexBlockNumber);
+          if (code.indexOf('0x') === 0) {
+            isContract = true;
+          }
+        }
+
+        const toAccount = {
+          blockNumber: number,
+          address: tx.to || 'none',
+          balance: new BigNumber(this._getNumberFromHex(toBalance)).toString(),
+          timestamp: block.timestamp,
+          isContract: isContract
+        };
+        const fromAccount = {
+          blockNumber: number,
+          address: tx.from,
+          balance: new BigNumber(this._getNumberFromHex(fromBalance)).toString(),
+          timestamp: block.timestamp
+        };
+
         const isInternal = result.filter(t => t.isInternal);
         const output = {
           hash: txHash,
           transaction: tx,
           scan: result,
           receipt: receipt,
-          isInternal: isInternal.length > 0
+          isInternal: isInternal.length > 0,
+          toAccount,
+          fromAccount
         };
 
         return output;
       };
-      const results = await pMap(block.transactions, procTx, { concurrency: 5 });
+      const results = await pMap(block.transactions, procTx, { concurrency: 8 });
       block.number = number;
       return { block, transactions: results };
 	}
@@ -44,13 +72,13 @@ class Parity {
 	async scanTransaction(hash) {
     const receipt = await this.eth.eth_getTransactionReceipt(hash);
     const trace = await this._replayTransaction(hash);
-    // logger('trace', trace);
     const has = trace.trace.some((row) => row.error);
     const txs = [];
 
     trace.trace.forEach((callObject) => {
+      logger('callObject', callObject.type);
       if (parseInt(callObject.action.value, 16) > 0) {
-        logger('call', callObject);
+
         txs.push({
           blockNumber: this._getNumberFromHex(receipt.blockNumber),
           blockHash: receipt.blockHash,

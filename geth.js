@@ -1,8 +1,9 @@
 const EthereumRpc = require('./ethereum-rpc');
-const logger = require('debug')('etherscanner');
+const logger = require('debug')('etherscanner:geth');
 const loggerError = require('debug')('etherscanner:error');
 
 const pMap = require('p-map');
+const BigNumber = require('bignumber.js');
 
 class Geth {
   /**
@@ -16,81 +17,61 @@ class Geth {
   }
 
   async scanBlock(number) {
+    const hexBlockNumber = '0x' + number.toString(16);
     const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
     if (!block) return [];
 
     const procTx = async txHash => {
       const result = await this.scanTransaction(txHash);
       const tx = await this.eth.eth_getTransactionByHash(txHash);
+
       tx.blockNumber = number;
       const receipt = await this.eth.eth_getTransactionReceipt(txHash);
       const isInternal = result.filter(t => t.isInternal);
+
+      const toBalance = tx.to === null ? 0 : await this.eth.eth_getBalance(tx.to, hexBlockNumber);
+      const fromBalance = await this.eth.eth_getBalance(tx.from, hexBlockNumber);
+      let isContract = receipt.contractAddress !== null;
+      if (tx.to !== null && !isContract) {
+        //check if contract
+        const code = await this.eth.eth_getCode(tx.to, hexBlockNumber);
+        if (code.indexOf('0x') === 0) {
+          isContract = true;
+        }
+      }
+      const toAccount = {
+        blockNumber: number,
+        address: tx.to || 'none',
+        balance: new BigNumber(this._getNumberFromHex(toBalance)).toString(),
+        timestamp: block.timestamp,
+        isContract: isContract
+      };
+      const fromAccount = {
+        blockNumber: number,
+        address: tx.from,
+        balance: new BigNumber(this._getNumberFromHex(fromBalance)).toString(),
+        timestamp: block.timestamp
+      };
       const output = {
         hash: txHash,
         transaction: tx,
         scan: result,
         receipt: receipt,
-        isInternal: isInternal.length > 0
+        isInternal: isInternal.length > 0,
+        toAccount,
+        fromAccount
       };
 
       return output;
     };
-    const results = await pMap(block.transactions, procTx, { concurrency: 5 });
+    const results = await pMap(block.transactions, procTx, { concurrency: 8 });
     block.number = number;
     return { block, transactions: results };
   }
-  async scanBlockForFullData(number) {
+  async scanTransaction(hash, fullScan = false) {
+    if (fullScan) {
 
-    const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
-    if (!block) return [];
-
-    const procTx = async txHash => {
-      const result = await this.scanTransaction(txHash);
-      const tx = await this.eth.eth_getTransactionByHash(txHash);
-      tx.blockNumber = number;
-      const receipt = await this.eth.eth_getTransactionReceipt(txHash);
-      const isInternal = result.filter(t => t.isInternal);
-      const output = {
-        hash: txHash,
-        transaction: tx,
-        scan: result,
-        receipt: receipt,
-        isInternal: isInternal.length > 0
-      };
-
-      return output;
-    };
-    const results = await pMap(block.transactions, procTx, { concurrency: 5 });
-
-    return results;
-  }
-  async scanBlockForInternalTransactions(number) {
-
-    const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
-    if (!block) return [];
-
-    const procTx = async txHash => {
-      const result = await this.scanTransaction(txHash);
-      const receipt = await this.eth.eth_getTransactionReceipt(txHash);
-      const isInternal = result.filter(t => t.isInternal);
-      const output = {
-        hash: txHash,
-        scan: result,
-        txreceipt: receipt,
-        isInternal: isInternal.length > 0
-      };
-      return output;
-    };
-    const results = await pMap(block.transactions, procTx, { concurrency: 5 });
-    const internals = results.filter(tx => tx.isInternal);
-    const transactions = internals.reduce((txs, tx) => {
-      return txs.concat(tx.scan);
-    }, []);
-    const internalOnly = transactions.filter(t => t.isInternal);
-    return internalOnly;
-  }
-  async scanTransaction(hash) {
-
+    }
     const tx = await this.eth.eth_getTransactionByHash(hash);
 
     const calls = await this._getTransactionCalls(tx);
@@ -102,15 +83,33 @@ class Geth {
     return this._getTransactionsFromCall(tx, result);
   }
 
+  async _processTransaction(txHahs) {
+
+    const tx = await this.eth.eth_getTransactionByHash(txHash);
+    const result = await this.scanTransaction(txHash);
+
+    const receipt = await this.eth.eth_getTransactionReceipt(txHash);
+    const isInternal = result.filter(t => t.isInternal);
+    const output = {
+      hash: txHash,
+      transaction: tx,
+      transfers: result,
+      receipt: receipt,
+      isInternal: isInternal.length > 0
+    };
+    return output;
+  }
+
   _getTransactionsFromCall(tx, callObject, isInternal = false) {
     let txs = [];
+    logger(callObject.type)
     if (parseInt(callObject.value, 16) > 0) {
       txs.push({
         blockNumber: this._getNumberFromHex(tx.blockNumber),
         blockHash: tx.blockHash,
         to: this._getAddress(callObject.to),
         from: this._getAddress(callObject.from),
-        value: parseInt(callObject.value, 16),
+        value: new BigNumber(callObject.value).toString(),
         hash: tx.hash,
         type: callObject.type,
         isSuicide: callObject.type == 'SELFDESTRUCT',
@@ -127,7 +126,6 @@ class Geth {
   }
 
   async _getTransactionsFromTrace(txHash, txBlockNumber) {
-    //logger('trace', txHash);
 
     try {
       const blockNumber = await this.eth.eth_blockNumber();
@@ -137,7 +135,6 @@ class Geth {
         timeout: '10s',
         reexec: blockNumber - txBlockNumber + 20
       });
-      //logger('result', result);
       return result;
     } catch (err) {
       loggerError('error doing trace', err);
