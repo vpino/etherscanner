@@ -9,9 +9,7 @@ class Parity {
 
 	constructor(EthUrl) {
 		this.requestId = 1;
-    logger('Prepare to connect to parity', EthUrl);
     this.eth = new EthereumRpc(EthUrl);
-    logger('Connected');
 	}
 
   async scanBlock(number) {
@@ -76,7 +74,6 @@ class Parity {
     const txs = [];
 
     trace.trace.forEach((callObject) => {
-      logger('callObject', callObject.type);
       if (parseInt(callObject.action.value, 16) > 0) {
 
         txs.push({
@@ -88,6 +85,7 @@ class Parity {
           hash: hash,
           type: callObject.type,
           isSuicide: callObject.type == 'SELFDESTRUCT',
+          traceAddress: callObject.traceAddress && callObject.traceAddress.length ? callObject.traceAddress[0] : -1,
           isInternal: (callObject.traceAddress.length > 0)
         });
       }

@@ -1,7 +1,6 @@
 const EthereumRpc = require('./ethereum-rpc');
 const logger = require('debug')('etherscanner:geth');
 const loggerError = require('debug')('etherscanner:error');
-
 const pMap = require('p-map');
 const BigNumber = require('bignumber.js');
 
@@ -11,9 +10,9 @@ class Geth {
    * @param EthUrl
    */
   constructor(EthUrl) {
-    logger('Prepare to connect to geth node', EthUrl);
+
     this.eth = new EthereumRpc(EthUrl);
-    logger('Connected to geth node');
+
   }
 
   async scanBlock(number) {
@@ -100,9 +99,8 @@ class Geth {
     return output;
   }
 
-  _getTransactionsFromCall(tx, callObject, isInternal = false) {
+  _getTransactionsFromCall(tx, callObject, dex = -1, isInternal = false) {
     let txs = [];
-    logger(callObject.type)
     if (parseInt(callObject.value, 16) > 0) {
       txs.push({
         blockNumber: this._getNumberFromHex(tx.blockNumber),
@@ -113,14 +111,17 @@ class Geth {
         hash: tx.hash,
         type: callObject.type,
         isSuicide: callObject.type == 'SELFDESTRUCT',
-        isInternal
+        isInternal,
+        traceAddress: dex
       });
+
     }
     if (!callObject.calls) {
       return txs;
     }
     callObject.calls.forEach(_callObject => {
-      txs = txs.concat(this._getTransactionsFromCall(tx, _callObject, true));
+      dex++;
+      txs = txs.concat(this._getTransactionsFromCall(tx, _callObject, dex, true));
     });
     return txs;
   }
