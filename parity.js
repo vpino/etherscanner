@@ -19,10 +19,11 @@ class Parity {
       let result = [];
 
       const procTx = async txHash => {
-        const result = await this.scanTransaction(txHash);
+        const receipt = await this.eth.eth_getTransactionReceipt(txHash);
+        const result = await this.scanTransaction(txHash, receipt);
         const tx = await this.eth.eth_getTransactionByHash(txHash);
         tx.blockNumber = number;
-        const receipt = await this.eth.eth_getTransactionReceipt(txHash);
+
         const toBalance = tx.to === null ? 0 : await this.eth.eth_getBalance(tx.to, hexBlockNumber);
         const fromBalance = await this.eth.eth_getBalance(tx.from, hexBlockNumber);
         let isContract = receipt.contractAddress !== null;
@@ -67,8 +68,7 @@ class Parity {
       return { block, transactions: results };
 	}
 
-	async scanTransaction(hash) {
-    const receipt = await this.eth.eth_getTransactionReceipt(hash);
+	async scanTransaction(hash, receipt) {
     const trace = await this._replayTransaction(hash);
     const has = trace.trace.some((row) => row.error);
     const txs = [];

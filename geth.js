@@ -77,14 +77,33 @@ class Geth {
     return calls;
   }
 
+  async scanTransactionDetails(tx) {
+    const calls = await this._getTransactionCalls(tx);
+    return calls;
+  }
   async _getTransactionCalls(tx) {
     const result = await this._getTransactionsFromTrace(tx.hash, tx.blockNumber);
     return this._getTransactionsFromCall(tx, result);
   }
 
-  async _processTransaction(txHahs) {
+  async _processTransaction(txHash) {
+    const transaction = await this.eth.eth_getTransactionByHash(txHash);
+    const result = await this.scanTransactionDetails(transaction);
 
-    const tx = await this.eth.eth_getTransactionByHash(txHash);
+    const receipt = await this.eth.eth_getTransactionReceipt(txHash);
+    const isInternal = result.filter(t => t.isInternal);
+    const output = {
+      hash: txHash,
+      transaction: transaction,
+      transfers: result,
+      receipt: receipt,
+      isInternal: isInternal.length > 0
+    };
+    return output;
+  }
+
+  async _processTransactionFromTx(tx) {
+
     const result = await this.scanTransaction(txHash);
 
     const receipt = await this.eth.eth_getTransactionReceipt(txHash);
@@ -98,7 +117,6 @@ class Geth {
     };
     return output;
   }
-
   _getTransactionsFromCall(tx, callObject, dex = -1, isInternal = false) {
     let txs = [];
     if (parseInt(callObject.value, 16) > 0) {
@@ -133,7 +151,7 @@ class Geth {
 
       const result = await this.eth.call('debug_traceTransaction', txHash, {
         tracer: 'callTracer',
-        timeout: '10s',
+        timeout: '30s',
         reexec: blockNumber - txBlockNumber + 20
       });
       return result;
