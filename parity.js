@@ -38,14 +38,14 @@ class Parity {
         const toAccount = {
           blockNumber: number,
           address: tx.to || 'none',
-          balance: new BigNumber(this._getNumberFromHex(toBalance)).toString(),
+          balance: new BigNumber(this._getNumberFromHex(toBalance)).toString(10),
           timestamp: block.timestamp,
           isContract: isContract
         };
         const fromAccount = {
           blockNumber: number,
           address: tx.from,
-          balance: new BigNumber(this._getNumberFromHex(fromBalance)).toString(),
+          balance: new BigNumber(this._getNumberFromHex(fromBalance)).toString(10),
           timestamp: block.timestamp
         };
 
