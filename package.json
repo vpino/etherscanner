@@ -1,7 +1,7 @@
 {
   "name": "@kev_nz/etherscanner",
   "namespace": "ethereum",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "Receive all the ethereum transactions that have been included in the block, including 'internal' transactions",
   "author": "kevin.isom@gmail.com",
   "license": "MIT",
@@ -34,6 +34,7 @@
     "request-promise-native": "^1.0.5"
   },
   "devDependencies": {
+    "@kev_nz/publisher": "^1.1.1",
     "dotenv": "^6.0.0",
     "eslint": "^5.3.0",
     "eslint-config-prettier": "^2.10.0",

@@ -3,17 +3,23 @@
  Module for parse ethereum transactions or block and get from them all Eth transfers (normal and "internal")
 
 ## Warning
-To work the module need this correction - https://github.com/ethereum/go-ethereum/pull/15297.
-So you must use geth version 1.7.3 or higher
+
+This module is deprecated, just like Ethereum should be.
+
+Ethereum is junk and you almost certainly do not need a blockchain
 
 
 ## Installation
+
+If you must.
 
 ```bash
 npm install @kev_nz/etherscanner
 ```
 
 ## Usage
+
+Please don't
 
 ```js
 const EtherScanner = require('@kev_nz/etherscanner');
@@ -23,6 +29,7 @@ const etherScanner = await EtherScanner(`http://localhost:6082`);
 ```
 
 ##### Get all transfers by transaction hash
+
 ```js
 const result = await etherScanner.scanTransaction('0xc475f8bf9d2721b17f7c09944c2aa32ea943f452cb54ee0aefcb98ead0735274');
 console.log(result);
@@ -51,9 +58,11 @@ result:
 }]
 
 ```
+
 type - "" || CALL || CREATION || SELFDESTRUCT
 
 ##### Get all transfers by block number
+
 ```js
 etherScanner.scanBlock(1822433, (err, result) => {
 	console.log(result);
