@@ -2,27 +2,19 @@
 
  Module for parse ethereum transactions or block and get from them all Eth transfers (normal and "internal")
 
-## Warning
-
-This module is deprecated, just like Ethereum should be.
-
-Ethereum is junk and you almost certainly do not need a blockchain
-
-
 ## Installation
 
 If you must.
 
 ```bash
-npm install @kev_nz/etherscanner
+npm install @nova47sanz/etherscanner
 ```
 
 ## Usage
 
-Please don't
 
 ```js
-const EtherScanner = require('@kev_nz/etherscanner');
+const EtherScanner = require('@nova47sanz/etherscanner');
 
 const etherScanner = await EtherScanner(`http://localhost:6082`);
 
@@ -58,6 +50,40 @@ result:
 }]
 
 ```
+
+in case of internal tx calling SC in BlockChain:
+
+```json
+{
+    "blockNumber": "",
+    "blockHash": "",
+    "to": "0xf53d56bf81d4ad997b9e70935270baba8efaefe7",
+    "from": "0x3acf9c404fda9a69c559d1e816b9613145e89948",
+    "value": 0.1,
+    "hash": "0x21fbb3a548637bec8fdb7ebbe5fa2feaa6302e1872aef76a04de71e3ddb85e96",
+    "type": "Token",
+    "isSuicide": "none",
+    "isInternal": true,
+    "traceAddress": 1,
+    "input": "0x23b872dd0000000000000000000000003acf9c404fda9a69c559d1e816b9613145e89948000000000000000000000000f53d56bf81d4ad997b9e70935270baba8efaefe700000000000000000000000000000000000000000000000000000000000186a0"
+},
+{
+    "blockNumber": "",
+    "blockHash": "",
+    "to": "0xe0d0c4c35d30baa00a2c93004555db66b8ac7068",
+    "from": "0x3acf9c404fda9a69c559d1e816b9613145e89948",
+    "value": 1,
+    "hash": "0x21fbb3a548637bec8fdb7ebbe5fa2feaa6302e1872aef76a04de71e3ddb85e96",
+    "type": "Token",
+    "isSuicide": "none",
+    "isInternal": true,
+    "traceAddress": 2,
+    "input": "0x23b872dd0000000000000000000000003acf9c404fda9a69c559d1e816b9613145e89948000000000000000000000000e0d0c4c35d30baa00a2c93004555db66b8ac706800000000000000000000000000000000000000000000000000000000000f4240"
+},..
+```
+
+
+
 
 type - "" || CALL || CREATION || SELFDESTRUCT
 

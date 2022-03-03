@@ -3,15 +3,23 @@ const logger = require('debug')('etherscanner:geth');
 const loggerError = require('debug')('etherscanner:error');
 const pMap = require('p-map');
 const BigNumber = require('bignumber.js');
+const abiDecoder = require('abi-decoder');
+const abiTether = require('@nova47sanz/etherscanner/abiContracts/tether')
+const abiWocex = require('@nova47sanz/etherscanner/abiContracts/wocexBatchContracts')
 
 class Geth {
   /**
    *
    * @param EthUrl
    */
+
+  abisLoader = [];
+
   constructor(EthUrl) {
 
     this.eth = new EthereumRpc(EthUrl);
+    this.abisLoader.push(abiTether);
+    this.abisLoader.push(abiWocex);
 
   }
 
@@ -119,6 +127,7 @@ class Geth {
   }
   _getTransactionsFromCall(tx, callObject, dex = -1, isInternal = false) {
     let txs = [];
+
     if (parseInt(callObject.value, 16) > 0) {
       txs.push({
         blockNumber: this._getNumberFromHex(tx.blockNumber),
@@ -133,6 +142,112 @@ class Geth {
         traceAddress: dex
       });
 
+    }
+    else {
+      if (callObject.calls != undefined) {
+        callObject.calls.forEach(_callObject => {
+          if (_callObject.input.length > 139) {
+            try {
+              this.abisLoader.forEach((abi) => {
+                abiDecoder.addABI(abi)
+              });
+              const decodedData = abiDecoder.decodeMethod(callObject.input);
+              console.log(abiDecoder.decodeLogs);
+              var to, from, value = "";
+              decodedData.params.forEach((element) => {
+                switch (element.name) {
+                  case "_to":
+                    to = element.value
+                    break;
+
+                  case "_from":
+                    from = element.value
+                    break;
+
+                  case "_value":
+                    value = element.value
+                    break;
+
+                  default:
+                    break;
+                }
+              })
+              txs.push({
+                blockNumber: '',
+                blockHash: '',
+                to: to,
+                from: callObject.to,
+                value: value,
+                hash: tx.hash,
+                type: 'Token',
+                contract: _callObject.to,
+                method: decodedData.name,
+                isSuicide: 'none',
+                'isInternal': true,
+                traceAddress: dex,
+                input: _callObject.input,
+                inputDecoded: decodedData
+              });
+
+            } catch (error) {
+              console.error(error)
+            }
+          }
+          dex++;
+        });
+      }
+      else {
+        if (callObject.type == "STATICCALL") {
+          return;
+        }
+        try {
+
+          this.abisLoader.forEach((abi) => {
+            abiDecoder.addABI(abi)
+          });
+
+          const decodedData = abiDecoder.decodeMethod(callObject.input);
+          var to, from, value = "";
+
+          decodedData.params.forEach((element) => {
+            switch (element.name) {
+              case "_to":
+                to = element.value
+                break;
+
+              case "_from":
+                from = element.value
+                break;
+
+              case "_value":
+                value = element.value
+                break;
+
+              default:
+                break;
+            }
+          })
+
+          txs.push({
+            blockNumber: this._getNumberFromHex(tx.blockNumber),
+            blockHash: tx.blockHash,
+            to: to,
+            from: callObject.to,
+            value: value,
+            hash: tx.hash,
+            type: 'Token',
+            contract: callObject.to,
+            method: decodedData.name,
+            isSuicide: 'none',
+            'isInternal': true,
+            traceAddress: dex,
+            input: callObject.input,
+            inputDecoded: decodedData
+          });
+        } catch (error) {
+          console.error(error)
+        }
+      }
     }
     if (!callObject.calls) {
       return txs;
@@ -161,13 +276,13 @@ class Geth {
     }
   }
   _toHex(value) {
-    return '0x'+ value.toLowerCase().replace(/^0x/i,'');
+    return '0x' + value.toLowerCase().replace(/^0x/i, '');
   }
   _getAddress(value) {
     if (!value) return value;
     if (value.match(/^0x[a-zA-Z0-9]{40}/)) return value;
 
-    if (typeof(value) == typeof(true)) return value ? '0x01' : '0x00';
+    if (typeof (value) == typeof (true)) return value ? '0x01' : '0x00';
 
     let address = this._toHex(value);
     while (address.length < 42) address = address.replace(/^0x/, '0x0');
