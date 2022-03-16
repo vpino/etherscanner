@@ -6,14 +6,14 @@ const BigNumber = require('bignumber.js');
 const abiDecoder = require('abi-decoder');
 const abiTether = require('@nova47sanz/etherscanner/abiContracts/tether')
 const abiWocex = require('@nova47sanz/etherscanner/abiContracts/wocexBatchContracts')
-
+const abisLoader = [];
 class Geth {
   /**
    *
    * @param EthUrl
    */
 
-  abisLoader = [];
+
 
   constructor(EthUrl) {
 
@@ -160,11 +160,19 @@ class Geth {
                     to = element.value
                     break;
 
+                  case "addresses":
+                    to = element.value
+                    break;
+
                   case "_from":
                     from = element.value
                     break;
 
                   case "_value":
+                    value = element.value
+                    break;
+
+                  case "amounts":
                     value = element.value
                     break;
 
@@ -184,7 +192,7 @@ class Geth {
                 method: decodedData.name,
                 isSuicide: 'none',
                 'isInternal': true,
-                traceAddress: dex,
+                traceAddress: Math.abs(dex),
                 input: _callObject.input,
                 inputDecoded: decodedData
               });
@@ -215,11 +223,19 @@ class Geth {
                 to = element.value
                 break;
 
+              case "addresses":
+                to = element.value
+                break;
+
               case "_from":
                 from = element.value
                 break;
 
               case "_value":
+                value = element.value
+                break;
+
+              case "amounts":
                 value = element.value
                 break;
 
@@ -240,7 +256,7 @@ class Geth {
             method: decodedData.name,
             isSuicide: 'none',
             'isInternal': true,
-            traceAddress: dex,
+            traceAddress: Math.abs(dex),
             input: callObject.input,
             inputDecoded: decodedData
           });
