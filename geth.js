@@ -18,8 +18,8 @@ class Geth {
   constructor(EthUrl) {
 
     this.eth = new EthereumRpc(EthUrl);
-    this.abisLoader.push(abiTether);
-    this.abisLoader.push(abiWocex);
+    abisLoader.push(abiTether);
+    abisLoader.push(abiWocex);
 
   }
 
@@ -148,7 +148,7 @@ class Geth {
         callObject.calls.forEach(_callObject => {
           if (_callObject.input.length > 139) {
             try {
-              this.abisLoader.forEach((abi) => {
+              abisLoader.forEach((abi) => {
                 abiDecoder.addABI(abi)
               });
               const decodedData = abiDecoder.decodeMethod(callObject.input);
@@ -210,7 +210,7 @@ class Geth {
         }
         try {
 
-          this.abisLoader.forEach((abi) => {
+          abisLoader.forEach((abi) => {
             abiDecoder.addABI(abi)
           });
 
