@@ -1,7 +1,7 @@
 {
   "name": "@nova47sanz/etherscanner",
   "namespace": "ethereum",
-  "version": "1.3.3",
+  "version": "1.3.5",
   "description": "Receive all the ethereum transactions that have been included in the block, including 'internal' transactions and public reading the input value",
   "author": "kopacanova47@gmail.com",
   "license": "MIT",
