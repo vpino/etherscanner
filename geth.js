@@ -27,7 +27,6 @@ class Geth {
     const hexBlockNumber = '0x' + number.toString(16);
     const block = await this.eth.eth_getBlockByNumber('0x' + number.toString(16), false);
     if (!block) return [];
-
     const procTx = async txHash => {
       const result = await this.scanTransaction(txHash);
       const tx = await this.eth.eth_getTransactionByHash(txHash);
@@ -127,7 +126,6 @@ class Geth {
   }
   _getTransactionsFromCall(tx, callObject, dex = -1, isInternal = false) {
     let txs = [];
-
     if (parseInt(callObject.value, 16) > 0) {
       txs.push({
         blockNumber: this._getNumberFromHex(tx.blockNumber),
@@ -145,6 +143,7 @@ class Geth {
     }
     else {
       if (callObject.calls != undefined) {
+        console.log(tx.hash, 'has sub TXs');
         callObject.calls.forEach(_callObject => {
           if (_callObject.input.length > 139) {
             try {
@@ -152,7 +151,6 @@ class Geth {
                 abiDecoder.addABI(abi)
               });
               const decodedData = abiDecoder.decodeMethod(callObject.input);
-              console.log(abiDecoder.decodeLogs);
               var to, from, value = "";
               decodedData.params.forEach((element) => {
                 switch (element.name) {
@@ -209,51 +207,58 @@ class Geth {
           return;
         }
         try {
-
+          console.log(tx.hash, 'is single');
+          if (callObject == undefined || callObject.length == 0) {
+            callObject = tx;
+          }
           abisLoader.forEach((abi) => {
             abiDecoder.addABI(abi)
           });
 
-          const decodedData = abiDecoder.decodeMethod(callObject.input);
-          var to, from, value = "";
+          var to, from, value, name, decodedData = "";
+          if (callObject.input) {
+            decodedData = abiDecoder.decodeMethod(callObject.input);
+            if (decodedData) {
+              name = decodedData.name;
+              decodedData.params.forEach((element) => {
+                switch (element.name) {
+                  case "_to":
+                    to = element.value
+                    break;
 
-          decodedData.params.forEach((element) => {
-            switch (element.name) {
-              case "_to":
-                to = element.value
-                break;
+                  case "addresses":
+                    to = element.value
+                    break;
 
-              case "addresses":
-                to = element.value
-                break;
+                  case "_from":
+                    from = element.value
+                    break;
 
-              case "_from":
-                from = element.value
-                break;
+                  case "_value":
+                    value = element.value
+                    break;
 
-              case "_value":
-                value = element.value
-                break;
+                  case "amounts":
+                    value = element.value
+                    break;
 
-              case "amounts":
-                value = element.value
-                break;
-
-              default:
-                break;
+                  default:
+                    break;
+                }
+              })
             }
-          })
+          }
 
           txs.push({
             blockNumber: this._getNumberFromHex(tx.blockNumber),
             blockHash: tx.blockHash,
             to: to,
-            from: callObject.to,
+            from: callObject.from,
             value: value,
             hash: tx.hash,
             type: 'Token',
             contract: callObject.to,
-            method: decodedData.name,
+            method: name,
             isSuicide: 'none',
             'isInternal': true,
             traceAddress: Math.abs(dex),
