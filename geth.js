@@ -147,37 +147,8 @@ class Geth {
         callObject.calls.forEach(_callObject => {
           if (_callObject.input.length > 139) {
             try {
-              abisLoader.forEach((abi) => {
-                abiDecoder.addABI(abi)
-              });
-              const decodedData = abiDecoder.decodeMethod(callObject.input);
-              var to, from, value = "";
-              decodedData.params.forEach((element) => {
-                switch (element.name) {
-                  case "_to":
-                    to = element.value
-                    break;
+              var to, from, value, name, decodedData= "";
 
-                  case "addresses":
-                    to = element.value
-                    break;
-
-                  case "_from":
-                    from = element.value
-                    break;
-
-                  case "_value":
-                    value = element.value
-                    break;
-
-                  case "amounts":
-                    value = element.value
-                    break;
-
-                  default:
-                    break;
-                }
-              })
               txs.push({
                 blockNumber: '',
                 blockHash: '',
@@ -187,7 +158,7 @@ class Geth {
                 hash: tx.hash,
                 type: 'Token',
                 contract: _callObject.to,
-                method: decodedData.name,
+                method: name,
                 isSuicide: 'none',
                 'isInternal': true,
                 traceAddress: Math.abs(dex),
@@ -211,43 +182,8 @@ class Geth {
           if (callObject == undefined || callObject.length == 0) {
             callObject = tx;
           }
-          abisLoader.forEach((abi) => {
-            abiDecoder.addABI(abi)
-          });
 
           var to, from, value, name, decodedData = "";
-          if (callObject.input) {
-            decodedData = abiDecoder.decodeMethod(callObject.input);
-            if (decodedData) {
-              name = decodedData.name;
-              decodedData.params.forEach((element) => {
-                switch (element.name) {
-                  case "_to":
-                    to = element.value
-                    break;
-
-                  case "addresses":
-                    to = element.value
-                    break;
-
-                  case "_from":
-                    from = element.value
-                    break;
-
-                  case "_value":
-                    value = element.value
-                    break;
-
-                  case "amounts":
-                    value = element.value
-                    break;
-
-                  default:
-                    break;
-                }
-              })
-            }
-          }
 
           txs.push({
             blockNumber: this._getNumberFromHex(tx.blockNumber),
