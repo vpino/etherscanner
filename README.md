@@ -7,14 +7,14 @@
 If you must.
 
 ```bash
-npm install @vicpino/etherscanner
+npm install @vpino/etherscanner
 ```
 
 ## Usage
 
 
 ```js
-const EtherScanner = require('@vicpino/etherscanner');
+const EtherScanner = require('@vpino/etherscanner');
 
 const etherScanner = await EtherScanner(`http://localhost:6082`);
 
