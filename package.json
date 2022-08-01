@@ -1,9 +1,9 @@
 {
-  "name": "@nova47sanz/etherscanner",
+  "name": "@vpino/etherscanner",
   "namespace": "ethereum",
-  "version": "1.3.5",
+  "version": "1.0.0",
   "description": "Receive all the ethereum transactions that have been included in the block, including 'internal' transactions and public reading the input value",
-  "author": "kopacanova47@gmail.com",
+  "author": "vicpino.dev@gmail.com",
   "license": "MIT",
   "scripts": {
     "test": "mocha"
@@ -13,11 +13,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/NovaSanchez/etherscanner.git"
+    "url": "https://github.com/vpino/etherscanner.git"
   },
-  "homepage": "https://github.com/NovaSanchez/etherscanner",
+  "homepage": "https://github.com/vpino/etherscanner",
   "bugs": {
-    "url": "https://github.com/NovaSanchez/etherscanner/issues"
+    "url": "https://github.com/vpino/etherscanner/issues"
   },
   "keywords": [
     "ethereum",
@@ -27,21 +27,15 @@
   ],
   "main": "./index.js",
   "dependencies": {
-    "abi-decoder": "^2.4.0",
-    "bignumber.js": "^7.2.1",
-    "debug": "^3.1.0",
-    "lodash": "^4.17.10",
-    "p-map": "^1.2.0",
-    "request": "^2.88.0",
-    "request-promise-native": "^1.0.5"
+    "bignumber.js": "7.2.1",
+    "debug": "3.1.0",
+    "lodash": "4.17.10",
+    "p-map": "1.2.0",
+    "request": "2.88.0",
+    "request-promise-native": "1.0.5"
   },
   "devDependencies": {
-    "@kev_nz/publisher": "^1.1.1",
-    "dotenv": "^6.0.0",
-    "eslint": "^5.3.0",
-    "eslint-config-prettier": "^2.10.0",
-    "eslint-plugin-prettier": "^2.6.2",
-    "mocha": "^5.2.0",
-    "prettier": "^1.14.2"
+    "@kev_nz/publisher": "1.1.1",
+    "dotenv": "6.0.0"
   }
 }

@@ -15,6 +15,7 @@ class Geth {
   async scanTransaction(hash, lastBlockNumber) {
     const tx = await this.eth.eth_getTransactionByHash(hash);
     const calls = await this._getTransactionCalls(tx, lastBlockNumber);
+
     return calls;
   }
 

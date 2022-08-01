@@ -7,14 +7,14 @@
 If you must.
 
 ```bash
-npm install @nova47sanz/etherscanner
+npm install @vicpino/etherscanner
 ```
 
 ## Usage
 
 
 ```js
-const EtherScanner = require('@nova47sanz/etherscanner');
+const EtherScanner = require('@vicpino/etherscanner');
 
 const etherScanner = await EtherScanner(`http://localhost:6082`);
 
@@ -80,17 +80,4 @@ in case of internal tx calling SC in BlockChain:
     "traceAddress": 2,
     "input": "0x23b872dd0000000000000000000000003acf9c404fda9a69c559d1e816b9613145e89948000000000000000000000000e0d0c4c35d30baa00a2c93004555db66b8ac706800000000000000000000000000000000000000000000000000000000000f4240"
 },..
-```
 
-
-
-
-type - "" || CALL || CREATION || SELFDESTRUCT
-
-##### Get all transfers by block number
-
-```js
-etherScanner.scanBlock(1822433, (err, result) => {
-	console.log(result);
-});
-```
