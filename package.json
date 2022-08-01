@@ -5,9 +5,6 @@
   "description": "Receive all the ethereum transactions that have been included in the block, including 'internal' transactions and public reading the input value",
   "author": "vicpino.dev@gmail.com",
   "license": "MIT",
-  "scripts": {
-    "test": "mocha"
-  },
   "engines": {
     "node": ">= 8.0.0"
   },
